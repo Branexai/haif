@@ -449,3 +449,9 @@ Gateway -> Client: final response (done)
 **Consequences**: Consistent telemetry across services; needs sampling/retention policies to control cost.
 
 ---
+
+## 12) Wrap‑up & Next Deliverables
+
+* Add **README – Architecture at a Glance** with links to all diagrams.
+* Generate **PNG/SVG** exports for each PlantUML block.
+* Draft **security threat model** (STRIDE quick pass) and **SLO table** (P50/P95 targets per model tier).
