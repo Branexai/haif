@@ -22,5 +22,4 @@ npm --prefix examples/cli run infer -- "Hello world"
 GATEWAY_URL=http://localhost:3000 npm --prefix examples/cli run infer -- '{"input":"Hello"}'
 ```
 
-## Optional Firebase
-- If you have a Firebase ID token, set `FIREBASE_ID_TOKEN` to send `Authorization: Bearer <token>`. The current Gateway optionally initializes Firebase Admin via `FIREBASE_PROJECT_ID`, but token verification is not enforced in code.
+<!-- Firebase references removed -->

@@ -1,0 +1,9 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY examples/web-chat/package.json ./
+RUN npm install --no-audit --no-fund
+COPY examples/web-chat/ ./
+# Ensure Vite serves on all interfaces for container access
+ENV VITE_PORT=5173
+EXPOSE 5173
+CMD ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]

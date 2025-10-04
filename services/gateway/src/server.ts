@@ -1,29 +1,23 @@
 import Fastify from 'fastify'
+import { setupHttpMetrics } from './observability.js'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import fetch from 'node-fetch'
-import admin from 'firebase-admin'
+// Firebase removed
 
 const app = Fastify({ logger: true })
+// Observability: metrics and log correlation
+setupHttpMetrics(app)
 const PORT = Number(process.env.PORT || 3000)
 const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || 'http://tether-orchestrator:4000'
 
-// Optional Firebase token validation (no secrets embedded)
-try {
-  if (!admin.apps.length && process.env.FIREBASE_PROJECT_ID) {
-    admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID })
-    app.log.info('Firebase Admin initialized')
-  }
-} catch (err) {
-  app.log.warn({ err }, 'Firebase Admin initialization skipped')
-}
+// Firebase Admin initialization removed
 
 app.register(cors)
 app.register(helmet)
 
 app.get('/health', async () => ({ status: 'ok', service: 'gateway' }))
 
-// Proxy pilot route to orchestrator
 app.post('/infer', async (req, reply) => {
   try {
     const res = await fetch(`${ORCHESTRATOR_URL}/schedule`, { method: 'POST', body: JSON.stringify(await req.body), headers: { 'content-type': 'application/json' } })

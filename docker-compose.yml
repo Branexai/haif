@@ -36,14 +36,27 @@ services:
     container_name: tether-gateway
     environment:
       NODE_ENV: production
+      SERVICE_NAME: gateway
       PORT: 3000
       REDIS_URL: redis://tether-redis:6379
       ORCHESTRATOR_URL: http://tether-orchestrator:4000
+      OTEL_PROMETHEUS_PORT: 9464
+      OTEL_PROMETHEUS_ENDPOINT: /metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
     depends_on:
-      - orchestrator
-      - redis
+      orchestrator:
+        condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tether-net
     restart: unless-stopped
 
   orchestrator:
@@ -53,14 +66,30 @@ services:
     container_name: tether-orchestrator
     environment:
       NODE_ENV: production
+      SERVICE_NAME: orchestrator
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
       REDIS_URL: redis://tether-redis:6379
+      WORKER_URL: http://worker:6000
+      OTEL_PROMETHEUS_PORT: 9464
+      OTEL_PROMETHEUS_ENDPOINT: /metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      worker:
+        condition: service_healthy
     ports:
       - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tether-net
     restart: unless-stopped
 
   registry:
@@ -70,12 +99,23 @@ services:
     container_name: tether-registry
     environment:
       NODE_ENV: production
+      SERVICE_NAME: registry
       PORT: 5000
       DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
+      OTEL_PROMETHEUS_PORT: 9464
+      OTEL_PROMETHEUS_ENDPOINT: /metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
     depends_on:
       - postgres
     ports:
       - "5000:5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tether-net
     restart: unless-stopped
 
   worker:
@@ -84,13 +124,145 @@ services:
       dockerfile: CI/dockerfiles/Dockerfile.worker
     container_name: tether-worker
     environment:
+      SERVICE_NAME: worker
       WORKER_PORT: 6000
+      MODEL_ID: ${MODEL_ID:-HuggingFaceTB/SmolLM2-1.7B-Instruct}
+      OTEL_PROMETHEUS_PORT: 9464
+      OTEL_PROMETHEUS_ENDPOINT: /metrics
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
     depends_on:
-      - redis
+      redis:
+        condition: service_started
     ports:
       - "6000:6000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:6000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tether-net
+
+  web-chat:
+    build:
+      context: examples/web-chat
+      dockerfile: Dockerfile
+    container_name: tether-web-chat
+    environment:
+      GATEWAY_URL: http://gateway:3000
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  # Observability stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tether-prometheus
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
+    ports:
+      - "9090:9090"
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: tether-loki
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - lokidata:/loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: tether-promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: ["-config.file=/etc/promtail/config.yml"]
+    networks:
+      - tether-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.46
+    container_name: tether-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC (optional)
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: tether-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - tether-net
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: tether-alertmanager
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: tether-otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4318:4318" # OTLP HTTP receiver
+    networks:
+      - tether-net
     restart: unless-stopped
 
 volumes:
   pgdata:
   redisdata:
+  lokidata:
+
+networks:
+  tether-net:
+    name: tether-net

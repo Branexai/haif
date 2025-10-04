@@ -15,7 +15,7 @@
       .status-ok { color: #10b981; }
       .status-posting { color: #f59e0b; }
       .status-error { color: #ef4444; }
-      .settings { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+      .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
       .settings input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0b1220; color: #e2e8f0; }
       .chat { border: 1px solid #334155; border-radius: 12px; background: #0b1220; display: flex; flex-direction: column; height: 65vh; }
       .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -45,7 +45,6 @@
       <div class="settings">
         <input id="gatewayUrl" placeholder="Gateway URL (e.g., http://localhost:3000)" />
         <input id="modelName" placeholder="Model (optional, e.g., demo)" />
-        <input id="firebaseToken" placeholder="Firebase ID Token (optional)" />
       </div>
       <div class="chat">
         <div id="messages" class="messages"></div>

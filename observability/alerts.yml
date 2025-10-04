@@ -1,0 +1,20 @@
+groups:
+  - name: tether-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: (sum(rate(http_request_errors_total[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service)) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate for {{ $labels.service }}"
+          description: "Error rate > 10% over last 5 minutes."
+
+      - alert: SlowRequestsP95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency P95 for {{ $labels.service }}"
+          description: "P95 latency > 1s over last 5 minutes."

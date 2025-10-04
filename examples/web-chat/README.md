@@ -5,12 +5,11 @@ Simple web UI that simulates a chat with the inference cluster via the Gateway.
 ## Features
 - Send a message and view the Orchestrator scheduling response.
 - Configure Gateway URL.
-- Optional: include a Firebase ID token in the `Authorization` header.
 
 ## Run
 ```
 npm --prefix examples/web-chat install
-npm --prefix examples/web-chat run dev
+ npm --prefix examples/web-chat run dev
 ```
 
 Open the printed local URL (usually `http://localhost:5173/`). Ensure the backend is running:

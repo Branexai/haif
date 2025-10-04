@@ -1,0 +1,59 @@
+# Root .gitignore for hyperswarm-rpc-ai-inferece-framework
+
+# Node & TypeScript
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+**/coverage/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files (keep examples tracked)
+.env
+.env.*
+!.env.example
+
+# OS & Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.history/
+
+# Caches & temp
+.cache/
+**/.cache/
+.tmp/
+**/.tmp/
+
+# Testing
+jest-results/
+jest-cache/
+**/.jest/
+
+# Frontend (Vite) example app
+examples/web-chat/.vite
+examples/web-chat/dist
+examples/web-chat/.cache
+
+# Docker (local overrides)
+docker-compose.override.yml
+
+# Firebase local artifacts
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# PlantUML caches
+docs/**/plantuml_cache/
+
+# Misc
+*.local

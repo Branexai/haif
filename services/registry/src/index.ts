@@ -1,7 +1,9 @@
 import Fastify from 'fastify'
+import { setupHttpMetrics } from './observability.js'
 import { z } from 'zod'
 
 const app = Fastify({ logger: true })
+setupHttpMetrics(app)
 const PORT = Number(process.env.PORT || 5000)
 
 const ModelSchema = z.object({

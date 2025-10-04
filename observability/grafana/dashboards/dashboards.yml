@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'tether-dashboards'
+    orgId: 1
+    folder: 'Tether'
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      recursive: true

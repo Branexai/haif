@@ -1,0 +1,41 @@
+{
+  "id": null,
+  "title": "Service Overview",
+  "tags": ["tether"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests per second",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [
+        {"expr": "sum(rate(http_requests_total[1m])) by (service)", "legendFormat": "{{service}}"}
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (last 5m)",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [
+        {"expr": "sum(rate(http_request_errors_total[5m])) / sum(rate(http_requests_total[5m]))", "legendFormat": "Error rate"}
+      ],
+      "options": {"reduceOptions": {"calcs": ["last"]}, "orientation": "horizontal"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency P95",
+      "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))", "legendFormat": "{{service}}"}
+      ]
+    }
+  ],
+  "templating": {"list": []}
+}

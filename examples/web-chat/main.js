@@ -40,7 +40,6 @@ async function sendMessage() {
   $("input").value = ""
 
   const model = $("modelName").value.trim()
-  const firebaseToken = $("firebaseToken").value.trim()
   const gateway = getGatewayUrl()
   const endpoint = `${gateway}/infer`
 
@@ -49,7 +48,6 @@ async function sendMessage() {
 
   const body = model ? { model, prompt: input } : { input }
   const headers = { "content-type": "application/json" }
-  if (firebaseToken) headers["Authorization"] = `Bearer ${firebaseToken}`
 
   setStatus("posting", "Posting…")
   try {
@@ -70,7 +68,6 @@ async function sendMessage() {
 function init() {
   $("gatewayUrl").value = localStorage.getItem("gatewayUrl") || "http://localhost:3000"
   $("modelName").value = localStorage.getItem("modelName") || ""
-  $("firebaseToken").value = ""
   setStatus("ready", "Ready")
 
   $("gatewayUrl").addEventListener("change", (e) => localStorage.setItem("gatewayUrl", e.target.value))

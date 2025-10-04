@@ -10,7 +10,9 @@
   "parserOptions": {
     "project": [
       "services/gateway/tsconfig.json",
-      "services/orchestrator/tsconfig.json"
+      "services/orchestrator/tsconfig.json",
+      "services/registry/tsconfig.json",
+      "services/worker/tsconfig.json"
     ],
     "tsconfigRootDir": "."
   },

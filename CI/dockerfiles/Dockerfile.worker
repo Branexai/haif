@@ -1,10 +1,15 @@
-FROM python:3.10-slim AS base
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+FROM node:20-slim AS build
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
-COPY services/worker/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY services/worker/package.json services/worker/tsconfig.json ./
+RUN npm install
 COPY services/worker/src ./src
+RUN npm run build
+
+FROM node:20-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY services/worker/package.json ./
+RUN npm install --omit=dev
+COPY --from=build /app/dist ./dist
 EXPOSE 6000
-CMD ["python","-m","src.inference_server"]
+CMD ["node","dist/index.js"]

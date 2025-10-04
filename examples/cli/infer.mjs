@@ -22,10 +22,6 @@ try {
 }
 
 const headers = { 'content-type': 'application/json' }
-// Optional: include Firebase ID token if available (Gateway may validate in future)
-if (process.env.FIREBASE_ID_TOKEN) {
-  headers.Authorization = `Bearer ${process.env.FIREBASE_ID_TOKEN}`
-}
 
 console.log(`Posting to: ${endpoint}`)
 console.log('Payload:', payload)
