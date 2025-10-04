@@ -1,0 +1,16 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY services/gateway/package.json ./
+COPY services/gateway/tsconfig.json ./
+RUN npm install --no-audit --no-fund
+COPY services/gateway/src ./src
+RUN npm run build || npx tsc
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+EXPOSE 3000
+CMD ["node","dist/server.js"]

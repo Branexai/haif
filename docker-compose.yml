@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   plantuml:
     image: plantuml/plantuml-server:jetty
@@ -6,3 +5,92 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: tether-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tether}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tetherpass}
+      POSTGRES_DB: ${POSTGRES_DB:-tether}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: tether-redis
+    command: ["redis-server","--appendonly","yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: CI/dockerfiles/Dockerfile.gateway
+    container_name: tether-gateway
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_URL: redis://tether-redis:6379
+      ORCHESTRATOR_URL: http://tether-orchestrator:4000
+    depends_on:
+      - orchestrator
+      - redis
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: CI/dockerfiles/Dockerfile.orchestrator
+    container_name: tether-orchestrator
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
+      REDIS_URL: redis://tether-redis:6379
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  registry:
+    build:
+      context: .
+      dockerfile: CI/dockerfiles/Dockerfile.registry
+    container_name: tether-registry
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
+    depends_on:
+      - postgres
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: CI/dockerfiles/Dockerfile.worker
+    container_name: tether-worker
+    environment:
+      WORKER_PORT: 6000
+    depends_on:
+      - redis
+    ports:
+      - "6000:6000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

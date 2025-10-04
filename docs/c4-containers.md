@@ -17,15 +17,15 @@ Person(client, "API Client / SDK")
 Person(devops, "Tether Operator")
 
 System_Boundary(tether, "Tether – AI Inference Network") {
-  Container(gateway, "RPC Gateway", "Node.js / Go", "Edge adapter: validates, normalizes, rate-limits, emits trace context")
-  Container(orch, "Orchestrator/Scheduler", "Go / Rust", "Discovers workers, matches requests, retries, circuit-breakers")
-  Container(reg, "Model Registry", "Service", "Catalog of models, versions, capabilities, policies")
-  ContainerDb(meta, "Metadata Store", "Postgres/SQLite-cluster", "Jobs, quotas, tokens, indexes; strongly-consistent")
-  ContainerQueue(dlq, "Error Queue / DLQ", "Queue", "Failed jobs, poison messages for analysis")
-  Container(obsagent, "Observability Exporters", "Sidecar/Daemon", "OTel traces, metrics, logs")
+  Container(gateway, "RPC Gateway", "Node.js/TypeScript", "Edge adapter: validates, normalizes, rate-limits, emits trace context")
+  Container(orch, "Orchestrator/Scheduler", "Node.js/TypeScript", "Discovers workers, matches requests, retries, circuit-breakers")
+  Container(reg, "Model Registry", "Node.js/TypeScript", "Catalog of models, versions, capabilities, policies")
+  ContainerDb(meta, "Metadata Store", "PostgreSQL", "Jobs, quotas, tokens, indexes; strongly-consistent")
+  ContainerQueue(dlq, "Error Queue / DLQ", "Node.js/Redis", "Failed jobs, poison messages for analysis")
+  Container(obsagent, "Observability Exporters", "Node.js/TypeScript", "OTel traces, metrics, logs")
 
   Boundary(region, "Worker Fleet (by Region)") {
-    Container(worker, "Inference Worker", "BaseWorker + ModelRuntime", "Runs models locally (CPU/GPU), exposes infer()")
+    Container(worker, "Inference Worker", "Python + Node.js", "Runs models locally (CPU/GPU), exposes infer()")
   }
 }
 
@@ -51,6 +51,16 @@ Rel(orch, billing, "Periodic usage export", "Batch")
 SHOW_LEGEND()
 @enduml
 ```
+
+### Technology Stack Specifications
+
+* **Gateway**: Node.js/TypeScript with Express.js or Fastify for HTTP/RPC handling, rate limiting via `node-rate-limiter-flexible`
+* **Orchestrator**: Node.js/TypeScript with clustering support, using `hyperswarm` for P2P discovery and `pg` for PostgreSQL access
+* **Model Registry**: Node.js/TypeScript service with REST API, metadata validation using Joi or Zod
+* **Metadata Store**: PostgreSQL with connection pooling, migrations via Knex.js or Prisma
+* **DLQ**: Redis with Node.js client (`ioredis`) for queue management and retry logic
+* **Observability**: Node.js/TypeScript with `@opentelemetry/api` and exporters for Prometheus/Jaeger
+* **Workers**: Python for ML inference (PyTorch, Transformers, vLLM) + Node.js for RPC communication via `hyperswarm`
 
 ### Key Contracts & Topics (for labels in diagrams/readme)
 

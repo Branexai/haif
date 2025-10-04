@@ -2,6 +2,23 @@
 
 This overview summarizes the Tether AI inference network and ties together the C4 Context, Container, Component, and Code (Deployment & Sequence) views in the `docs/` folder.
 
+## Technology Stack
+
+**Tether** is built using a modern, polyglot architecture optimized for AI inference workloads:
+
+### Core Technologies
+- **Node.js/TypeScript**: Primary runtime for orchestration, gateway, and registry services
+- **Python**: ML inference engine with PyTorch, Transformers, and vLLM
+- **PostgreSQL**: Metadata persistence and job state management
+- **Redis**: Distributed queuing and caching layer
+- **Hyperswarm**: P2P networking for worker discovery and RPC communication
+
+### Key Libraries & Frameworks
+- **Orchestrator**: `hyperswarm`, `opossum` (circuit breaker), `p-retry`, `bottleneck` (rate limiting)
+- **Gateway**: `fastify`, `node-rate-limiter-flexible`, `zod` (validation)
+- **ML Workers**: `torch`, `transformers`, `vllm`, `psutil` (monitoring)
+- **Observability**: `@opentelemetry/api`, `winston`, `prometheus-client`
+
 ## Overview
 
 Tether is a decentralized inference network built on Hyperswarm. It includes an RPC Gateway, Orchestrator/Scheduler, Model Registry, Metadata Store, DLQ, Observability exporters, and regional Worker fleets.

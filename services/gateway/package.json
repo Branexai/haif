@@ -1,0 +1,27 @@
+{
+  "name": "@tether/gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "fastify": "^4.25.0",
+    "@fastify/cors": "^8.3.0",
+    "@fastify/helmet": "^11.1.1",
+    "node-fetch": "^3.3.2",
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "eslint-config-standard-with-typescript": "^43.0.0",
+    "@types/node": "^20.4.5"
+  }
+}

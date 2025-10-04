@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inference Chat</title>
+    <style>
+      :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+      header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+      h1 { font-size: 20px; margin: 0; }
+      .status { padding: 6px 10px; border-radius: 8px; border: 1px solid #334155; background: #0b1220; font-size: 12px; }
+      .status-ready { color: #94a3b8; }
+      .status-ok { color: #10b981; }
+      .status-posting { color: #f59e0b; }
+      .status-error { color: #ef4444; }
+      .settings { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+      .settings input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0b1220; color: #e2e8f0; }
+      .chat { border: 1px solid #334155; border-radius: 12px; background: #0b1220; display: flex; flex-direction: column; height: 65vh; }
+      .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+      .msg { display: grid; grid-template-columns: 52px 1fr; gap: 10px; }
+      .msg .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; }
+      .msg.user .avatar { background: #3b82f6; color: white; }
+      .msg.system .avatar { background: #10b981; color: #062b23; }
+      .msg .bubble { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; }
+      .composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px; border-top: 1px solid #334155; }
+      textarea { width: 100%; min-height: 60px; max-height: 160px; resize: vertical; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0b1220; color: #e2e8f0; }
+      button { padding: 10px 16px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; cursor: pointer; }
+      button:hover { filter: brightness(1.1); }
+      .inline-status { padding: 6px 10px; font-size: 12px; }
+      .inline-ready { color: #94a3b8; }
+      .inline-ok { color: #10b981; }
+      .inline-posting { color: #f59e0b; }
+      .inline-error { color: #ef4444; }
+      footer { margin-top: 12px; font-size: 12px; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Inference Chat</h1>
+        <div id="status" class="status status-ready">Ready</div>
+      </header>
+      <div class="settings">
+        <input id="gatewayUrl" placeholder="Gateway URL (e.g., http://localhost:3000)" />
+        <input id="modelName" placeholder="Model (optional, e.g., demo)" />
+        <input id="firebaseToken" placeholder="Firebase ID Token (optional)" />
+      </div>
+      <div class="chat">
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+          <textarea id="input" placeholder="Type your message..."></textarea>
+          <button id="sendBtn">Send</button>
+        </div>
+        <div id="inlineStatus" class="inline-status inline-ready">Idle</div>
+      </div>
+      <footer>
+        Gateway proxies to Orchestrator. Responses show the planned dispatch.
+      </footer>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

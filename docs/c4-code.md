@@ -88,3 +88,245 @@ Gateway -> Client: final response (done)
 
 * `retryToken` ensures idempotency if Gateway must resend; Orchestrator uses reservation to avoid duplicate work.
 * Streaming is **Gateway↔Worker via Orchestrator** (can be optimized to direct Gateway↔Worker path if policy allows).
+
+---
+
+## 11) Code Implementation Mindmap
+
+```plantuml
+@startmindmap
+* Tether Code Implementation
+** Orchestrator (Node.js/TypeScript)
+*** Core Modules
+**** src/orchestrator/
+***** discovery/
+****** hyperswarm-client.ts
+****** peer-registry.ts
+****** health-checker.ts
+***** scheduler/
+****** request-matcher.ts
+****** load-balancer.ts
+****** affinity-scorer.ts
+***** policies/
+****** rate-limiter.ts (bottleneck)
+****** quota-manager.ts
+****** circuit-breaker.ts (opossum)
+***** retry/
+****** retry-manager.ts (p-retry)
+****** backoff-strategy.ts
+*** Dependencies
+**** package.json
+***** hyperswarm: ^2.15.3
+***** opossum: ^6.3.0
+***** p-retry: ^5.1.2
+***** bottleneck: ^2.19.5
+***** pg: ^8.8.0
+
+** Worker Runtime (Python + Node.js)
+*** Python ML Stack
+**** src/worker/python/
+***** models/
+****** model_loader.py (transformers)
+****** inference_engine.py (vllm/torch)
+****** resource_monitor.py (psutil, pynvml)
+***** adapters/
+****** lora_manager.py
+****** quantization.py
+*** Node.js RPC Layer
+**** src/worker/nodejs/
+***** rpc/
+****** hyperswarm-server.ts
+****** request-handler.ts
+***** quota/
+****** quota-guard.ts
+****** tenant-limiter.ts
+*** Dependencies
+**** requirements.txt
+***** torch>=2.0.0
+***** transformers>=4.30.0
+***** vllm>=0.2.0
+***** psutil>=5.9.0
+***** pynvml>=11.5.0
+
+** Gateway (Node.js/TypeScript)
+*** Core Modules
+**** src/gateway/
+***** http/
+****** express-server.ts
+****** rate-limiter.ts (node-rate-limiter-flexible)
+***** validation/
+****** request-validator.ts (joi/zod)
+****** auth-middleware.ts
+***** routing/
+****** model-router.ts
+****** load-balancer.ts
+
+** Model Registry (Node.js/TypeScript)
+*** Core Modules
+**** src/registry/
+***** api/
+****** rest-endpoints.ts
+****** graphql-schema.ts
+***** storage/
+****** postgres-adapter.ts (pg/prisma)
+****** model-metadata.ts
+***** validation/
+****** schema-validator.ts (zod)
+
+** Contracts & Topics
+*** TypeScript Interfaces
+**** src/types/
+***** contracts/
+****** inference-request.ts
+****** worker-capabilities.ts
+****** job-status.ts
+***** events/
+****** hyperswarm-topics.ts
+****** message-schemas.ts
+
+** Data Stores
+*** PostgreSQL Schema
+**** migrations/
+***** 001_create_jobs.sql
+***** 002_create_workers.sql
+***** 003_create_quotas.sql
+*** Redis Configuration
+**** config/redis/
+***** queue-config.ts
+***** dlq-setup.ts
+
+** Observability (Node.js/TypeScript)
+*** OpenTelemetry Setup
+**** src/observability/
+***** tracing/
+****** otel-setup.ts (@opentelemetry/api)
+****** span-processor.ts
+***** metrics/
+****** prometheus-exporter.ts
+****** custom-metrics.ts
+***** logging/
+****** structured-logger.ts (winston)
+
+** Security
+*** Authentication
+**** src/auth/
+***** jwt-validator.ts
+***** api-key-manager.ts
+*** Encryption
+**** src/crypto/
+***** tls-config.ts
+***** message-encryption.ts
+
+** Build & Deployment
+*** Docker Configuration
+**** Dockerfile.orchestrator
+**** Dockerfile.worker
+**** Dockerfile.gateway
+*** Package Management
+**** package.json (Node.js services)
+**** requirements.txt (Python ML)
+**** docker-compose.yml
+*** CI/CD
+**** .github/workflows/
+***** build-test.yml
+***** deploy.yml
+@endmindmap
+```
+
+Render the mindmap with PlantUML to visualize the code-level structure and relationships.
+
+---
+
+## 12) Package Configuration Examples
+
+#### Orchestrator package.json
+```json
+{
+  "name": "@tether/orchestrator",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "hyperswarm": "^2.15.3",
+    "opossum": "^6.3.0",
+    "p-retry": "^5.1.2",
+    "bottleneck": "^2.19.5",
+    "pg": "^8.8.0",
+    "ioredis": "^5.3.2",
+    "@opentelemetry/api": "^1.4.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.39.4",
+    "winston": "^3.10.0",
+    "joi": "^17.9.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6",
+    "tsx": "^3.12.7",
+    "vitest": "^0.34.1",
+    "@types/node": "^20.4.5"
+  }
+}
+```
+
+#### Worker requirements.txt
+```txt
+# ML Core Dependencies
+torch>=2.0.0,<3.0.0
+transformers>=4.30.0,<5.0.0
+vllm>=0.2.0,<1.0.0
+accelerate>=0.21.0
+
+# System Monitoring
+psutil>=5.9.0
+pynvml>=11.5.0
+GPUtil>=1.4.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+pillow>=10.0.0
+
+# Networking & RPC
+aiohttp>=3.8.0
+websockets>=11.0.0
+msgpack>=1.0.0
+
+# Observability
+opentelemetry-api>=1.18.0
+opentelemetry-sdk>=1.18.0
+prometheus-client>=0.17.0
+
+# Development
+pytest>=7.4.0
+black>=23.7.0
+mypy>=1.5.0
+```
+
+#### Gateway package.json
+```json
+{
+  "name": "@tether/gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "fastify": "^4.21.0",
+    "node-rate-limiter-flexible": "^2.4.2",
+    "zod": "^3.22.2",
+    "jsonwebtoken": "^9.0.2",
+    "@fastify/cors": "^8.3.0",
+    "@fastify/helmet": "^11.1.1",
+    "hyperswarm": "^2.15.3"
+  }
+}
+```
+
+```
