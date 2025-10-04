@@ -24,7 +24,7 @@ const sdk = new (NodeSDK as any)({
   traceExporter: new OTLPTraceExporter({ url: otlpTracesUrl }),
   metricReader: prometheusExporter,
   instrumentations: [getNodeAutoInstrumentations()]
-})
+});
 
 (async () => {
   try {

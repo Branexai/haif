@@ -47,11 +47,6 @@ examples/web-chat/.cache
 # Docker (local overrides)
 docker-compose.override.yml
 
-# Firebase local artifacts
-.firebase/
-firebase-debug.log
-firestore-debug.log
-
 # PlantUML caches
 docs/**/plantuml_cache/
 

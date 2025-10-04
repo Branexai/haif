@@ -1,4 +1,5 @@
 services:
+  # PlantUML server for generating UML diagrams
   plantuml:
     image: plantuml/plantuml-server:jetty
     container_name: plantuml-server
@@ -17,6 +18,12 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tether} -d ${POSTGRES_DB:-tether} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   redis:
@@ -42,7 +49,8 @@ services:
       ORCHESTRATOR_URL: http://tether-orchestrator:4000
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
+      # Use internal DNS of the otel-collector service to avoid host port requirements
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     depends_on:
       orchestrator:
         condition: service_healthy
@@ -51,7 +59,7 @@ services:
     ports:
       - "3000:3000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,7 +81,7 @@ services:
       WORKER_URL: http://worker:6000
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,7 +92,7 @@ services:
     ports:
       - "4000:4000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -104,13 +112,13 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     depends_on:
       - postgres
     ports:
       - "5000:5000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -126,20 +134,21 @@ services:
     environment:
       SERVICE_NAME: worker
       WORKER_PORT: 6000
-      MODEL_ID: ${MODEL_ID:-HuggingFaceTB/SmolLM2-1.7B-Instruct}
+      MODEL_ID: ${MODEL_ID:-Xenova/tinyllama-1.1b-chat}
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tether-otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     depends_on:
       redis:
         condition: service_started
     ports:
       - "6000:6000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:6000/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:6000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - tether-net
 
@@ -252,8 +261,6 @@ services:
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
-    ports:
-      - "4318:4318" # OTLP HTTP receiver
     networks:
       - tether-net
     restart: unless-stopped

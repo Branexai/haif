@@ -10,7 +10,7 @@ processors:
     attributes:
       - key: deployment.environment
         action: upsert
-        value: ${NODE_ENV}
+        value: docker
 
 exporters:
   otlphttp:
