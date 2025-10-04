@@ -17,10 +17,11 @@ Production-ready microservices framework for AI inference over RPC. It provides 
 ## Overview
 - Purpose: handle AI inference requests end-to-end with a modular, scalable stack.
 - Core services:
-  - Gateway (`http://localhost:3000`): public API for clients.
-  - Orchestrator (`http://localhost:4000`): schedules and dispatches jobs.
-  - Registry (`http://localhost:5000`): model and metadata store.
-  - Worker (`http://localhost:6000`): executes inference for a model.
+  - HTTP Bridge (`http://localhost:8080`): public HTTP API that translates to RPC.
+  - RPC Gateway: validates, rate-limits, and forwards requests over Hyperswarm RPC.
+  - Orchestrator: schedules and dispatches jobs to Workers over RPC.
+  - Registry: model and metadata management via RPC.
+  - Worker: executes inference locally (CPU/GPU), announces presence/capabilities.
 - Observability:
   - Prometheus (`http://localhost:9090`) metrics.
   - Grafana (`http://localhost:3001`) dashboards.
@@ -29,9 +30,10 @@ Production-ready microservices framework for AI inference over RPC. It provides 
 
 ## Architecture
 - Request flow:
-  - Clients send inference requests to the Gateway (`/infer`).
-  - Gateway proxies to Orchestrator (`/schedule`) which plans/dispatches work to Workers.
-  - Workers perform inference and return results through the Orchestrator → Gateway.
+  - Clients send inference requests to the **HTTP Bridge** (`POST /infer`).
+  - The bridge forwards to the **RPC Gateway**, which validates and submits to the **Orchestrator**.
+  - The **Orchestrator** selects a **Worker** and performs inference via **@hyperswarm/rpc**.
+  - Workers stream results back through the Orchestrator → Gateway → Bridge to clients.
 - Data & state:
   - Postgres (`5432`) stores orchestration state and registry metadata.
   - Redis (`6379`) provides lightweight coordination/queues.
@@ -49,16 +51,13 @@ Start everything:
 - This builds images and starts services with health checks and restart policies.
 
 Service URLs:
-- Gateway: `http://localhost:3000` (health: `GET /health`)
-- Orchestrator: `http://localhost:4000`
-- Registry: `http://localhost:5000` (health: `GET /health`)
-- Worker: `http://localhost:6000` (health: `GET /health`)
+- HTTP Bridge: `http://localhost:8080`
 - Web Chat: `http://localhost:5173`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001`
 - Jaeger UI: `http://localhost:16686`
 - Loki API: `http://localhost:3100`
-- PlantUML server (for docs): `http://localhost:8080`
+- PlantUML server (for docs): `http://localhost:8085`
 
 Stop and clean:
 - Stop: `docker compose down`
@@ -117,7 +116,7 @@ The observability stack is provisioned for immediate use:
 - CLI:
   - Install: `npm --prefix examples/cli install`
   - Run simple input: `npm --prefix examples/cli run infer -- "Hello world"`
-  - Run JSON payload: `GATEWAY_URL=http://localhost:3000 npm --prefix examples/cli run infer -- '{"input":"Hello"}'`
+  - Run JSON payload: `GATEWAY_URL=http://localhost:8080 npm --prefix examples/cli run infer -- '{"input":"Hello"}'`
 
 ## Deployment
 Production deployment recommendations:
@@ -151,14 +150,13 @@ Production deployment recommendations:
 - SLOs: [docs/slo-table.md](docs/slo-table.md)
 - Threat Model: [docs/threat-model.md](docs/threat-model.md)
 
-### C4 Model (Architecture Documentation)
 The C4 Model is a simple, hierarchical way to document and communicate software architecture. It breaks the system into 4 views at increasing levels of detail:
 - C4-1 Context: [docs/c4-context.md](docs/c4-context.md) — the system in its environment, users and external systems.
 - C4-2 Containers: [docs/c4-containers.md](docs/c4-containers.md) — deployable/runtime units (services, databases), responsibilities and interactions.
 - C4-3 Components: [docs/c4-components.md](docs/c4-components.md) — major internal building blocks within each container and how they collaborate.
 - C4-4 Code: [docs/c4-code.md](docs/c4-code.md) — code-level structure for key components where useful.
 
-Diagrams are authored in Markdown and PlantUML. A PlantUML server is included in the stack at `http://localhost:8080` to render UML when needed.
+Diagrams are authored in Markdown and PlantUML. A PlantUML server is included in the stack at `http://localhost:8085` to render UML when needed.
 
 ## License
 Licensed under the MIT License. See `LICENSE` for details.

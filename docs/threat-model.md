@@ -19,7 +19,7 @@ This threat model identifies potential security threats against the Tether infer
 
 ### Mitigations
 - Model artifacts are content‑addressed by SHA‑256 digest and signed; Workers verify signatures before loading.
-- Transport encryption via Hyperswarm protects RPC channels from eavesdropping and tampering.
+- Transport encryption via **HTTPS/TLS** protects HTTP channels from eavesdropping and tampering; **Hyperswarm RPC** streams are authenticated and can be payload‑encrypted per tenant policy.
 - Metadata updates (jobs, quotas, reservations) are persisted in a strongly consistent store.
 
 ## Repudiation

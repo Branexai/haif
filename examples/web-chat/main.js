@@ -30,7 +30,7 @@ function setStatus(kind, text) {
 }
 
 function getGatewayUrl() {
-  const v = $("gatewayUrl").value.trim() || "http://localhost:3000"
+  const v = $("gatewayUrl").value.trim() || "http://localhost:8080"
   return v.endsWith("/") ? v.slice(0, -1) : v
 }
 
@@ -66,7 +66,7 @@ async function sendMessage() {
 }
 
 function init() {
-  $("gatewayUrl").value = localStorage.getItem("gatewayUrl") || "http://localhost:3000"
+  $("gatewayUrl").value = localStorage.getItem("gatewayUrl") || "http://localhost:8080"
   $("modelName").value = localStorage.getItem("modelName") || ""
   setStatus("ready", "Ready")
 

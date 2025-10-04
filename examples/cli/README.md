@@ -1,10 +1,10 @@
 # Inference CLI Demo
 
 ## What it does
-- Sends a request to the Gateway (`/infer`) which proxies to the Orchestrator (`/schedule`) and returns a planned dispatch response.
+- Sends a request to the HTTP Bridge (`/infer`), which translates the call to the RPC Gateway/Orchestrator and returns the scheduling/dispatch response.
 
 ## Prerequisites
-- Ensure the stack is running (`docker compose up -d`). The Gateway listens on `3000` by default.
+- Ensure the stack is running (`docker compose up -d`). The HTTP Bridge listens on `8080` by default.
 
 ## Install
 ```
@@ -17,9 +17,9 @@ npm --prefix examples/cli install
 npm --prefix examples/cli run infer -- "Hello world"
 ```
 
-- JSON payload (uses payload as-is)
+-- JSON payload (uses payload as-is)
 ```
-GATEWAY_URL=http://localhost:3000 npm --prefix examples/cli run infer -- '{"input":"Hello"}'
+GATEWAY_URL=http://localhost:8080 npm --prefix examples/cli run infer -- '{"input":"Hello"}'
 ```
 
 <!-- Firebase references removed -->

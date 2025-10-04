@@ -7,6 +7,9 @@ server:
 common:
   replication_factor: 1
 
+memberlist:
+  join_members: []
+
 query_range:
   parallelise_shardable_queries: true
 
@@ -27,6 +30,19 @@ storage_config:
     shared_store: filesystem
   filesystem:
     directory: /loki/chunks
+
+compactor:
+  working_directory: /loki/compactor
+
+ingester:
+  wal:
+    enabled: true
+    dir: /loki/wal
+  lifecycler:
+    ring:
+      kvstore:
+        store: memberlist
+    final_sleep: 0s
 
 ruler:
   storage:

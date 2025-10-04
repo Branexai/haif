@@ -6,36 +6,54 @@ This overview summarizes the Tether AI inference network and ties together the C
 
 **Tether** is built using a modern, polyglot architecture optimized for AI inference workloads:
 
-### Core Technologies
-- **Node.js/TypeScript**: Primary runtime for orchestration, gateway, and registry services
-- **Python**: ML inference engine with PyTorch, Transformers, and vLLM
-- **PostgreSQL**: Metadata persistence and job state management
-- **Redis**: Distributed queuing and caching layer
-- **Hyperswarm**: P2P networking for worker discovery and RPC communication
+### Core Technologies (current)
+- **Node.js/TypeScript**: Primary runtime for Gateway, Orchestrator, Registry, Worker
+- **Hyperswarm RPC (`@hyperswarm/rpc`)**: Inter‑service communication between **Gateway ↔ Orchestrator ↔ Worker**
+- **HTTP Bridge (Fastify + CORS)**: Public HTTP surface translating to RPC for browsers/clients
+- **JavaScript Transformers**: Local inference via `@huggingface/transformers` in Worker
+- **PostgreSQL**: Metadata persistence and job state management (Registry/Orchestrator)
+- **Redis**: DLQ / queuing (planned)
 
-### Key Libraries & Frameworks
-- **Orchestrator**: `hyperswarm`, `opossum` (circuit breaker), `p-retry`, `bottleneck` (rate limiting)
-- **Gateway**: `fastify`, `node-rate-limiter-flexible`, `zod` (validation)
-- **ML Workers**: `torch`, `transformers`, `vllm`, `psutil` (monitoring)
-- **Observability**: `@opentelemetry/api`, `winston`, `prometheus-client`
+### Key Libraries & Frameworks (current)
+- **Orchestrator**: `opossum` (circuit breaker), `p-retry`, `bottleneck` (rate limiting), `node-fetch`
+- **Gateway**: `fastify`, `@fastify/cors`, `@fastify/helmet`, `p-retry`, `bottleneck`, `node-fetch`
+- **Registry**: `fastify`, `pg`, `zod`
+- **Worker**: `Hyperswarm RPC`, `@huggingface/transformers`
+- **Observability**: `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`, `@opentelemetry/exporter-trace-otlp-http`, `@opentelemetry/exporter-prometheus`
+- **Optional (Firebase)**: Firebase Auth for tenant identity and Firestore for lightweight metadata/quotas in small deployments
 
 ## Overview
 
-Tether is a decentralized inference network built on Hyperswarm. It includes an RPC Gateway, Orchestrator/Scheduler, Model Registry, Metadata Store, DLQ, Observability exporters, and regional Worker fleets.
+Tether currently uses **Hyperswarm RPC** between services (Gateway, Orchestrator, Worker), with **OpenTelemetry** for observability. It includes an HTTP Bridge, RPC Gateway, Orchestrator/Scheduler, Model Registry, Metadata Store, and regional Worker endpoints.
 
 - Clients submit inference requests to the Gateway.
-- The Gateway routes to the Orchestrator over Hyperswarm topics.
+- The Gateway routes to the Orchestrator over RPC.
 - The Orchestrator handles discovery, scheduling, quota checks, and dispatches jobs to Workers.
 - Workers run models locally, fetch signed artifacts from a content‑addressed store, and report health/capacity.
 
+---
+
+## Summary
+
+**Service Discovery & Communication**
+- Services communicate over **Hyperswarm RPC**. The HTTP Bridge forwards requests to Gateway; Orchestrator invokes Workers over RPC.
+
+**Data Storage & Replication**
+- PostgreSQL serves as the regional Metadata Store with read replicas and cross‑region replication for DR. Model artifacts are content‑addressed, signed, and replicated (≥3). DLQ captures poison messages in Redis/Queue for analysis.
+
+**Scalability & Robustness**
+- Horizontal scale across Gateways/Orchestrators and elastic Worker fleets. Robustness via circuit‑breakers, jittered retries, idempotent reservations, and sharding by model/tenant/region.
+
+**Local AI Execution**
+- AI models run locally on Workers (PyTorch/vLLM), using local GPU/CPU; warm caches reduce cold‑start latency.
+
 ## Key Concepts
 
-- Hyperswarm topics: presence `tether/presence/<region>`, models `tether/models/<model>/<version>/<region>`, control `tether/control/<region>`.
-- Service discovery: Workers publish signed heartbeats every 5 s; expire after 15 s. Orchestrator subscribes to presence/model topics to maintain fleet state.
-- Scheduling & backpressure: Affinity score considers model match, region proximity, GPU class, queue depth, warm‑cache bonus. Token‑bucket at Gateway; queue‑depth thresholds at Workers.
-- Security: Node keypairs sign announcements; transport encryption via Hyperswarm. Optional tenant end‑to‑end payload encryption.
-- Artifacts: S3‑compatible store, addressed by digest and signed; Workers verify and maintain warm caches.
-- Observability: Correlation IDs and trace IDs on all requests; export via OpenTelemetry to external aggregators.
+- Communication: Hyperswarm RPC between services; streaming via RPC topics.
+- Scheduling & backpressure: Per-tenant rate limits at Gateway (Bottleneck); retries with jitter at Gateway/Orchestrator (p-retry); circuit breaking at Orchestrator (opossum).
+- Security: HTTPS/TLS where configured; optional end-to-end payload encryption planned.
+- Artifacts: Content-addressed model artifacts verified and cached at Workers (where applicable).
+- Observability: Correlation IDs and traces via OpenTelemetry; metrics exposed via Prometheus exporters.
 
 ## Components
 
@@ -45,6 +63,8 @@ Tether is a decentralized inference network built on Hyperswarm. It includes an 
 ## Deployment
 
 Regional Gateways and Orchestrators; region‑scoped Metadata Stores with replication; Workers across GPU/CPU classes.
+
+Observability per region includes OTel Collector, Prometheus (metrics), Loki (logs), Grafana (dashboards), and Alertmanager (alerts), with Promtail shipping logs from services.
 
 ## Diagrams
 

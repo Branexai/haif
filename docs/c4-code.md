@@ -15,20 +15,47 @@ Deployment_Node(cloud, "Cloud Regions") {
     ContainerDb(meta1, "Metadata Store")
     Node(workerA, "Worker A (gpuClass=a100, vramGB=80)")
     Node(workerB, "Worker B (gpuClass=rtx4090, vramGB=24)")
+    Node(otel1, "OTel Collector")
+    Node(prom1, "Prometheus")
+    Node(loki1, "Loki")
+    Node(graf1, "Grafana")
+    Node(alert1, "Alertmanager")
   }
   Deployment_Node(euwest, "eu-west") {
     Container(gateway2, "Gateway")
     Container(orch2, "Orchestrator")
     ContainerDb(meta2, "Metadata Store (replica)")
     Node(workerC, "Worker C (cpu-only)")
+    Node(otel2, "OTel Collector")
+    Node(prom2, "Prometheus")
+    Node(loki2, "Loki")
+    Node(graf2, "Grafana")
+    Node(alert2, "Alertmanager")
   }
 }
 
-Rel(gateway1, orch1, "RPC topics")
+Rel(gateway1, orch1, "RPC (@hyperswarm/rpc)")
 Rel(orch1, workerA, "jobs")
 Rel(orch1, workerB, "jobs")
 Rel(orch2, workerC, "jobs")
 Rel(meta1, meta2, "replication")
+Rel(gateway1, otel1, "OTLP traces/metrics/logs")
+Rel(orch1, otel1, "OTLP traces/metrics/logs")
+Rel(workerA, otel1, "OTLP traces/metrics/logs")
+Rel(workerB, otel1, "OTLP traces/metrics/logs")
+Rel(otel1, prom1, "metrics")
+Rel(otel1, loki1, "logs")
+Rel(prom1, graf1, "dashboards")
+Rel(loki1, graf1, "dashboards")
+Rel(prom1, alert1, "alerts")
+Rel(gateway2, otel2, "OTLP traces/metrics/logs")
+Rel(orch2, otel2, "OTLP traces/metrics/logs")
+Rel(workerC, otel2, "OTLP traces/metrics/logs")
+Rel(otel2, prom2, "metrics")
+Rel(otel2, loki2, "logs")
+Rel(prom2, graf2, "dashboards")
+Rel(loki2, graf2, "dashboards")
+Rel(prom2, alert2, "alerts")
 @enduml
 ```
 
@@ -57,8 +84,8 @@ participant "Observability" as Obs
 == Submit ==
 Client -> Gateway: infer.request(input, modelId, version, tenantId)
 Gateway -> Gateway: Validate token, schema, rate-limit (tenant)
-Gateway -> Orchestrator: RPC submit(request) 
-note over Gateway,Orchestrator: tether/control/<region>
+Gateway -> Orchestrator: RPC submit(request)
+note over Gateway,Orchestrator: RPC call (validate → schedule)
 Gateway -> Obs: Start trace/span
 
 == Placement ==
@@ -70,7 +97,7 @@ Orchestrator -> Meta: Reserve capacity (correlationId, retryToken)
 
 == Dispatch ==
 Orchestrator -> W: infer.start(request)
-note over Orchestrator,W: tether/models/<model>/<version>/<region>
+note over Orchestrator,W: RPC call (schedule → infer)
 W -> W: Load/Pin artifacts (digest verify)
 W -> Gateway: stream.chunk(...)
 Gateway -> Client: stream.chunk(...)
@@ -88,6 +115,22 @@ Gateway -> Client: final response (done)
 
 * `retryToken` ensures idempotency if Gateway must resend; Orchestrator uses reservation to avoid duplicate work.
 * Streaming is **Gateway↔Worker via Orchestrator** (can be optimized to direct Gateway↔Worker path if policy allows).
+
+---
+
+### Summary
+
+**Service Discovery & Communication**
+- Sequence shows Gateway validating and forwarding requests over Hyperswarm RPC. Orchestrator uses discovery snapshots from presence/model topics to place the request, then streams results back; observability spans wrap the lifecycle.
+
+**Data Storage & Replication**
+- Reservations and finalization write to the regional Metadata Store; cross‑region replication supports DR. Artifacts are verified and loaded at the Worker with local warm caches.
+
+**Scalability & Robustness**
+- Circuit breakers and retries protect the system from cascading failures; sharding by model/tenant/region enables targeted scaling. DLQ collects poison messages.
+
+**Local AI Execution**
+- The Worker runs the model locally and streams results; GPU/CPU selection aligns with `gpuClass` and capacity.
 
 ---
 

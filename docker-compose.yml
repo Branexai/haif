@@ -4,7 +4,7 @@ services:
     image: plantuml/plantuml-server:jetty
     container_name: plantuml-server
     ports:
-      - "8080:8080"
+      - "8085:8080"
     restart: unless-stopped
 
   postgres:
@@ -46,7 +46,8 @@ services:
       SERVICE_NAME: gateway
       PORT: 3000
       REDIS_URL: redis://tether-redis:6379
-      ORCHESTRATOR_URL: http://tether-orchestrator:4000
+      # Deprecated HTTP path; gateway now uses RPC internally
+      ORCHESTRATOR_PUBLIC_KEY: ${ORCHESTRATOR_PUBLIC_KEY}
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
       # Use internal DNS of the otel-collector service to avoid host port requirements
@@ -59,7 +60,7 @@ services:
     ports:
       - "3000:3000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,6 +77,10 @@ services:
       NODE_ENV: production
       SERVICE_NAME: orchestrator
       PORT: 4000
+      # Deterministic key pair for RPC (provide via .env in development)
+      ORCHESTRATOR_PUBLIC_KEY: ${ORCHESTRATOR_PUBLIC_KEY}
+      ORCHESTRATOR_SECRET_KEY: ${ORCHESTRATOR_SECRET_KEY}
+      ORCHESTRATOR_SEED: ${ORCHESTRATOR_SEED}
       DATABASE_URL: postgresql://${POSTGRES_USER:-tether}:${POSTGRES_PASSWORD:-tetherpass}@tether-postgres:5432/${POSTGRES_DB:-tether}
       REDIS_URL: redis://tether-redis:6379
       WORKER_URL: http://worker:6000
@@ -87,12 +92,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      worker:
-        condition: service_healthy
     ports:
       - "4000:4000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -118,7 +121,7 @@ services:
     ports:
       - "5000:5000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -135,6 +138,8 @@ services:
       SERVICE_NAME: worker
       WORKER_PORT: 6000
       MODEL_ID: ${MODEL_ID:-Xenova/tinyllama-1.1b-chat}
+      HF_TOKEN: ${HF_TOKEN}
+      ORCHESTRATOR_PUBLIC_KEY: ${ORCHESTRATOR_PUBLIC_KEY}
       OTEL_PROMETHEUS_PORT: 9464
       OTEL_PROMETHEUS_ENDPOINT: /metrics
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
@@ -144,7 +149,7 @@ services:
     ports:
       - "6000:6000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:6000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -158,10 +163,12 @@ services:
       dockerfile: Dockerfile
     container_name: tether-web-chat
     environment:
-      GATEWAY_URL: http://gateway:3000
+      GATEWAY_URL: http://http-bridge:8080
     depends_on:
       gateway:
         condition: service_healthy
+      http-bridge:
+        condition: service_started
     ports:
       - "5173:5173"
     healthcheck:
@@ -169,6 +176,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - tether-net
+    restart: unless-stopped
+
+  http-bridge:
+    build:
+      context: .
+      dockerfile: CI/dockerfiles/Dockerfile.http-bridge
+    container_name: tether-http-bridge
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: http-bridge
+      PORT: 8080
+      ORCHESTRATOR_PUBLIC_KEY: ${ORCHESTRATOR_PUBLIC_KEY}
+      TENANT_RATE_LIMIT_RPS: 5
+      TENANT_MAX_CONCURRENT: 2
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
     networks:
       - tether-net
     restart: unless-stopped

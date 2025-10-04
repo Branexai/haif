@@ -2,18 +2,15 @@
 
 Related layers: [Context](./c4-context.md) • [Containers](./c4-containers.md) • [Code](./c4-code.md)
 
-## 3) Service Discovery over Hyperswarm (design write‑up)
+## 3) Service Discovery (current implementation)
 
 **Goals**: zero single‑point‑of‑failure, fast worker discovery, and resilient routing under churn.
 
 ### 3.1 Announce & Discover
 
-* **Workers** announce presence on `tether/presence/<region>` with:
-
-  * `workerId`, `pubKey`, `gpuClass`, `capacity`, `supported {modelId, version}`, `latencyHops`.
-  * Signed heartbeat every *T=5s*; expiry window *3×T*.
-* **Model availability**: Workers also subscribe/announce on model‑specific topics `tether/models/<model>/<version>/<region>` to simplify targeted discovery.
-* **Orchestrator** maintains an **eventually‑consistent view** of fleet health from topic messages; **strong decisions** (quotas, reservations) are written to **Metadata Store**.
+* **Gateway → Orchestrator**: RPC calls via **@hyperswarm/rpc** for scheduling.
+* **Orchestrator → Worker**: RPC calls via **@hyperswarm/rpc** to `infer`.
+* **Quotas/Reservations**: Persisted in PostgreSQL as part of job state when applicable.
 
 ### 3.2 Scheduling & Backpressure
 
@@ -24,7 +21,7 @@ Related layers: [Context](./c4-context.md) • [Containers](./c4-containers.md) 
 ### 3.3 Security
 
 * Node **keypairs**; presence and model announcements are **signed** and **nonce‑protected** to mitigate replay.
-* Transport encryption via Hyperswarm’s crypto; optional end‑to‑end payload encryption per tenant policy.
+* Transport uses HTTPS/TLS where configured; optional end‑to‑end payload encryption is planned as a tenant policy.
 
 ### 3.4 Model Artifacts
 
@@ -55,22 +52,25 @@ Container_Boundary(orch, "Orchestrator/Scheduler") {
   Component(cb, "Circuit Breaker", "Node.js/TypeScript", "Failure detection using opossum library")
   Component(retry, "Retry Manager", "Node.js/TypeScript", "Exponential backoff with p-retry")
   Component(resv, "Reservation Manager", "Node.js/TypeScript", "Reserves capacity; writes job state to Metadata Store")
+  Component(otel, "TelemetrySDK", "Node.js/TypeScript", "OTel traces, metrics, logs")
 }
 
 Container_Ext(gateway, "RPC Gateway", "Edge Adapter")
 Container_Ext(worker, "Inference Worker", "ModelRuntime")
 ContainerDb_Ext(meta, "Metadata Store", "Postgres/SQLite-cluster")
 ContainerQueue_Ext(dlq, "Error Queue / DLQ", "Queue")
+Container_Ext(observ, "OTel Collector", "Telemetry Aggregation")
 
-Rel(gateway, scheduler, "Dispatch request", "RPC over Hyperswarm")
+Rel(gateway, scheduler, "Dispatch request", "RPC (@hyperswarm/rpc)")
 Rel(discSub, scheduler, "Fleet snapshot (in‑memory cache)")
 Rel(scheduler, policy, "Evaluate policy/quotas")
 Rel(scheduler, cb, "Check breaker state")
 Rel(scheduler, retry, "Plan retries/backoff")
 Rel(scheduler, resv, "Reserve capacity; persist job", "SQL")
 Rel(resv, meta, "Write job + reservation", "SQL")
-Rel(scheduler, worker, "Assign job / stream chunks", "RPC topics")
+Rel(scheduler, worker, "Assign job / process request", "RPC (@hyperswarm/rpc)")
 Rel(scheduler, dlq, "Poison/failed jobs → enqueue")
+Rel(otel, observ, "Export telemetry", "OTel")
 
 SHOW_LEGEND()
 @enduml
@@ -99,16 +99,18 @@ Container_Boundary(worker, "Inference Worker") {
   Component(exec, "ExecutionEngine", "Python", "GPU/CPU inference with vLLM or PyTorch")
   Component(health, "HealthReporter", "Python", "GPU memory and CPU usage tracking")
   Component(quota, "QuotaGuard", "Node.js/TypeScript", "Per‑tenant limits; local backpressure")
+  Component(otelw, "TelemetrySDK", "Node.js/Python", "OTel traces, metrics, logs")
 }
 
 Container_Ext(orch, "Orchestrator/Scheduler")
 Container_Ext(artifact, "Model Artifact Store", "S3/Hypercore")
 
-Rel(orch, base, "infer() RPC", "Hyperswarm topic")
+Rel(orch, base, "infer() RPC", "@hyperswarm/rpc")
 Rel(loader, artifact, "Fetch by digest; verify sig", "HTTPS/P2P")
 Rel(health, orch, "Announce on presence + model topics")
 Rel(exec, base, "Stream chunks → Gateway via Orchestrator")
 Rel(quota, base, "Check local tokens / shed if needed")
+Rel(otelw, orch, "Export telemetry via Collector", "OTel")
 
 SHOW_LEGEND()
 @enduml
@@ -139,4 +141,25 @@ SHOW_LEGEND()
 * **ExecutionEngine**: Inference execution with `vLLM` for LLMs or direct PyTorch for other models
 * **HealthReporter**: System monitoring using `psutil` and `pynvml` for GPU metrics
 
+#### Observability Components
+* **TelemetrySDK (OTel)**: Unified tracing/metrics/logs across Gateway, Orchestrator and Workers
+* **Exporters**: OTLP exporters to OTel Collector; metrics to Prometheus, logs to Loki
+* **Dashboards/Alerts**: Grafana for visualization; Alertmanager for alerting on SLO violations
+
 ### Key Interactions
+
+---
+
+### Summary
+
+**Service Discovery & Communication**
+- DiscoverySub ingests signed heartbeats and capability announcements from Workers over Hyperswarm topics. Scheduler uses an affinity score to route requests; transport is encrypted and per‑request RPC topics stream results.
+
+**Data Storage & Replication**
+- Reservation Manager persists idempotent job state in PostgreSQL with regional primaries and replicas. Model artifacts are content‑addressed and signed, stored with ≥3 replicas; Workers verify and cache locally.
+
+**Scalability & Robustness**
+- Circuit Breaker and Retry Manager implement failure isolation and jittered backoff. Sharding by model/tenant/region and warm caches reduce tail latency. DLQ stores poison messages for post‑mortem.
+
+**Local AI Execution**
+- ExecutionEngine runs models locally (GPU/CPU) and streams results; ModelLoader verifies signatures, loads weights/adapters, and maintains warm pools.

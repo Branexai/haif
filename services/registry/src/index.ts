@@ -1,29 +1,32 @@
-import Fastify from 'fastify'
-import { setupHttpMetrics } from './observability.js'
-import { z } from 'zod'
+import RPC from '@hyperswarm/rpc'
 
-const app = Fastify({ logger: true })
-setupHttpMetrics(app)
-const PORT = Number(process.env.PORT || 5000)
+const rpc = new RPC()
+const server = rpc.createServer()
+await server.listen()
 
-const ModelSchema = z.object({
-  name: z.string(),
-  version: z.string(),
-  capabilities: z.array(z.string()).optional()
+type Model = { name: string, version: string, capabilities?: string[] }
+const models = new Map<string, Model>()
+
+server.respond('health', async () => {
+  return Buffer.from(JSON.stringify({ status: 'ok', service: 'registry' }))
 })
 
-app.get('/health', async () => ({ status: 'ok', service: 'registry' }))
-
-app.post('/models', async (req, reply) => {
-  const parse = ModelSchema.safeParse(await req.body)
-  if (!parse.success) {
-    reply.code(400)
-    return { error: 'Invalid model metadata', details: parse.error.format() }
+server.respond('register-model', async (req: any) => {
+  try {
+    const body = JSON.parse(Buffer.isBuffer(req) ? req.toString('utf8') : String(req))
+    const name: string = body?.name
+    const version: string = body?.version
+    const capabilities: string[] | undefined = Array.isArray(body?.capabilities) ? body.capabilities : undefined
+    if (!name || !version) throw new Error('Missing name/version')
+    models.set(name, { name, version, capabilities })
+    return Buffer.from(JSON.stringify({ status: 'ok', model: { name, version, capabilities } }))
+  } catch (err: any) {
+    return Buffer.from(JSON.stringify({ error: 'Invalid model payload', details: String(err) }))
   }
-  return { status: 'accepted', model: parse.data }
 })
 
-app.listen({ host: '0.0.0.0', port: PORT }).catch((err) => {
-  app.log.error(err)
-  process.exit(1)
+server.respond('list-models', async () => {
+  return Buffer.from(JSON.stringify({ models: Array.from(models.values()) }))
 })
+
+console.log('Registry RPC public key:', server.publicKey.toString('hex'))

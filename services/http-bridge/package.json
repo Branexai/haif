@@ -1,0 +1,23 @@
+{
+  "name": "@tether/http-bridge",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "fastify": "^4.25.0",
+    "@hyperswarm/rpc": "^3.0.0",
+    "opossum": "^6.3.0",
+    "p-retry": "^5.1.2",
+    "bottleneck": "^2.19.5",
+    "@fastify/cors": "^8.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0",
+    "@types/node": "^20.4.5"
+  }
+}

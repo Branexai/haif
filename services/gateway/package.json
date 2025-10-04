@@ -9,10 +9,11 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "fastify": "^4.25.0",
-    "@fastify/cors": "^8.3.0",
-    "@fastify/helmet": "^11.1.1",
+    "@hyperswarm/rpc": "^3.0.0",
     "node-fetch": "^3.3.2",
+    "opossum": "^6.3.0",
+    "p-retry": "^5.1.2",
+    "bottleneck": "^2.19.5",
     "@opentelemetry/api": "^1.8.0",
     "@opentelemetry/sdk-node": "^0.50.0",
     "@opentelemetry/auto-instrumentations-node": "^0.50.0",

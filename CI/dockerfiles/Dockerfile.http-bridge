@@ -1,25 +1,24 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache build-base python3 cmake
-COPY services/registry/package.json ./
-COPY services/registry/package-lock.json ./
-COPY services/registry/tsconfig.json ./
-ENV npm_config_build_from_source=true
+COPY services/http-bridge/package.json ./
+COPY services/http-bridge/tsconfig.json ./
 RUN npm config set fetch-retries 5 \
  && npm config set fetch-retry-maxtimeout 120000 \
  && npm config set fetch-retry-mintimeout 20000 \
  && npm config set registry https://registry.npmjs.org/ \
- && npm config set timeout 600000 \
- && set -e; for i in 1 2 3 4 5; do npm ci --no-audit --no-fund --progress=false --loglevel=error && break || (echo "npm ci failed, retry $i" && sleep $((i*5))); done
+ && npm install --no-audit --no-fund --progress=false
 RUN npm rebuild sodium-native --build-from-source || npm rebuild || true
-COPY services/registry/src ./src
+COPY services/http-bridge/src ./src
 RUN npm run build || npx tsc
+RUN npm prune --omit=dev
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV RUNTIME=node
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-EXPOSE 5000
-CMD ["node","dist/index.js"]
+EXPOSE 8080
+CMD ["node","dist/server.js"]
