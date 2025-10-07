@@ -1,4 +1,4 @@
-# Hyperswarm RPC AI Inference Framework ("Tether")
+# Hyperswarm RPC AI Inference Framework ("HAIF")
 
 Production-ready microservices framework for AI inference over RPC. It provides a Gateway for client requests, an Orchestrator that schedules work, a Registry for model metadata, Workers that run inference, and a full observability stack (Prometheus, Grafana, Loki, Jaeger) — all wired together with Docker Compose.
 
