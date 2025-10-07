@@ -24,7 +24,7 @@ server.respond('infer', async (req: any) => {
     const body = JSON.parse(Buffer.isBuffer(req) ? req.toString('utf8') : String(req))
     const prompt: string = body?.prompt ?? body?.input ?? ''
     const modelId: string = (typeof body?.model === 'string' && body.model.trim()) ? body.model.trim() : MODEL_ID
-    const max_tokens: number = typeof body?.max_tokens === 'number' ? body.max_tokens : 128
+    const maxTokens: number = typeof body?.max_tokens === 'number' ? body.max_tokens : 128
     const temperature: number = typeof body?.temperature === 'number' ? body.temperature : 0.2
     const messages = Array.isArray(body?.messages) ? body.messages : null
     const modeRaw: string | undefined = typeof body?.mode === 'string' ? body.mode : undefined
@@ -47,7 +47,7 @@ server.respond('infer', async (req: any) => {
 
     const pipe = await getTextGen(modelId)
     const out = await pipe(chatPrompt, {
-      max_new_tokens: max_tokens,
+      max_new_tokens: maxTokens,
       temperature,
       return_full_text: false
     })
@@ -60,7 +60,7 @@ server.respond('infer', async (req: any) => {
     const result = {
       model: modelId,
       output: text,
-      max_tokens,
+      max_tokens: maxTokens,
       mode,
       provider: 'huggingface-transformers'
     }
@@ -78,7 +78,7 @@ http.post('/infer', async (req, reply) => {
     const body: any = await req.body
     const prompt: string = body?.prompt ?? body?.input ?? ''
     const modelId: string = (typeof body?.model === 'string' && body.model.trim()) ? body.model.trim() : MODEL_ID
-    const max_tokens: number = typeof body?.max_tokens === 'number' ? body.max_tokens : 128
+    const maxTokens: number = typeof body?.max_tokens === 'number' ? body.max_tokens : 128
     const temperature: number = typeof body?.temperature === 'number' ? body.temperature : 0.2
     const messages = Array.isArray(body?.messages) ? body.messages : null
     const modeRaw: string | undefined = typeof body?.mode === 'string' ? body.mode : undefined
@@ -102,7 +102,7 @@ http.post('/infer', async (req, reply) => {
 
     const pipe = await getTextGen(modelId)
     const out = await pipe(chatPrompt, {
-      max_new_tokens: max_tokens,
+      max_new_tokens: maxTokens,
       temperature,
       return_full_text: false
     })
@@ -115,7 +115,7 @@ http.post('/infer', async (req, reply) => {
     const result = {
       model: modelId,
       output: text,
-      max_tokens,
+      max_tokens: maxTokens,
       mode,
       provider: 'huggingface-transformers'
     }
@@ -198,8 +198,8 @@ async function registerWithOrchestrator(orchestratorPkHex: string) {
     const client = rpc.connect(Buffer.from(pk, 'hex'))
     try {
       // Add connection timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Connection timeout')), 10000)
+      const timeoutPromise = new Promise((resolve, reject) => {
+        setTimeout(() => { reject(new Error('Connection timeout')) }, 10000)
       })
 
       // Wait for channel to be ready with timeout
@@ -209,14 +209,14 @@ async function registerWithOrchestrator(orchestratorPkHex: string) {
           timeoutPromise
         ])
       }
-      
+
       if ((client as any).closed) throw new Error('RPC channel closed before request')
-      
+
       const resBuf = await Promise.race([
         client.request('register-worker', payload),
         timeoutPromise
       ])
-      
+
       const json = Buffer.isBuffer(resBuf) ? resBuf.toString('utf8') : String(resBuf)
       const out = JSON.parse(json)
       if (!out || out.status !== 'ok') {
@@ -225,7 +225,7 @@ async function registerWithOrchestrator(orchestratorPkHex: string) {
       // eslint-disable-next-line no-console
       console.log('Worker registered with orchestrator via RPC (pk:', pk.slice(0, 8), '...)')
     } finally {
-      try { 
+      try {
         if (typeof (client as any).end === 'function') {
           await (client as any).end()
         } else {
@@ -249,28 +249,29 @@ async function registerWithOrchestrator(orchestratorPkHex: string) {
 }
 
 const orchestratorPkEnv = process.env.ORCHESTRATOR_PUBLIC_KEY
-const orchestratorPk = (orchestratorPkEnv && orchestratorPkEnv.trim()) ? orchestratorPkEnv.trim() : (readPkFromFile() || '')
+const orchestratorPk = orchestratorPkEnv?.trim() ?? readPkFromFile() ?? ''
 if (orchestratorPk) {
   registerWithOrchestrator(orchestratorPk).catch(async (err) => {
     // eslint-disable-next-line no-console
     console.warn('Worker registration failed completely:', err)
-    
+
     // Set up periodic retry for registration
-    const retryInterval = setInterval(async () => {
-      try {
-        await registerWithOrchestrator(orchestratorPk)
-        clearInterval(retryInterval)
-        // eslint-disable-next-line no-console
-        console.log('Worker registration retry succeeded')
-      } catch (retryErr) {
-        // eslint-disable-next-line no-console
-        console.warn('Registration retry failed, will try again in 30s')
-      }
+    const retryInterval = setInterval(() => {
+      void registerWithOrchestrator(orchestratorPk)
+        .then(() => {
+          clearInterval(retryInterval)
+          // eslint-disable-next-line no-console
+          console.log('Worker registration retry succeeded')
+        })
+        .catch(() => {
+          // eslint-disable-next-line no-console
+          console.warn('Registration retry failed, will try again in 30s')
+        })
     }, 30000) // Retry every 30 seconds
   })
   // Periodically re-register to recover from orchestrator restarts
   setInterval(() => {
-    registerWithOrchestrator(orchestratorPk).catch(() => {})
+    void registerWithOrchestrator(orchestratorPk).catch(() => {})
   }, Number(process.env.WORKER_REREG_INTERVAL_MS || 60000))
 } else {
   // eslint-disable-next-line no-console

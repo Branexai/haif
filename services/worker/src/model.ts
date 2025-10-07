@@ -29,7 +29,7 @@ function ensureCacheDir(): string {
 function clearModelCache(modelId: string) {
   try {
     const base = ensureCacheDir()
-    const safe = modelId.replace(/[\/]/g, '__')
+    const safe = modelId.replace(/\//g, '__')
     const candidate = path.join(base, safe)
     if (fs.existsSync(candidate)) {
       try {

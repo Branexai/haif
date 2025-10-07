@@ -1,6 +1,6 @@
 import Hyperswarm from 'hyperswarm'
 import crypto from 'crypto'
-import { getTextGen } from './model.js'
+// Removed unused import
 
 function topicHash(name: string): Buffer {
   return crypto.createHash('sha256').update(name).digest()
@@ -9,8 +9,8 @@ function topicHash(name: string): Buffer {
 type GetPipe = () => Promise<any>
 
 export async function startSwarm(getPipe: GetPipe, modelId: string, port: number) {
-const presenceTopicName = process.env.HYPERSWARM_PRESENCE_TOPIC || 'haif-presence'
-const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${modelId}`
+  const presenceTopicName = process.env.HYPERSWARM_PRESENCE_TOPIC || 'haif-presence'
+  const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${modelId}`
 
   const swarm = new Hyperswarm()
 
@@ -44,7 +44,7 @@ const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${model
           const msg = JSON.parse(line)
           if (msg?.type === 'infer.start') {
             const prompt: string = msg?.prompt ?? ''
-            const max_tokens: number = typeof msg?.max_tokens === 'number' ? msg.max_tokens : 128
+            const maxTokens: number = typeof msg?.max_tokens === 'number' ? msg.max_tokens : 128
             const temperature: number = typeof msg?.temperature === 'number' ? msg.temperature : 0.7
             const modeRaw: string | undefined = typeof msg?.mode === 'string' ? msg.mode : undefined
             const mode: 'direct' | 'chat' = (modeRaw && modeRaw.toLowerCase().trim() === 'chat') ? 'chat' : 'direct'
@@ -52,11 +52,10 @@ const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${model
 
             const chatPrompt = (() => {
               if (mode === 'chat') {
-                return messages
+                const parts = messages
                   ? messages.map((m: any) => `${(m.role ?? 'user').toUpperCase()}: ${m.content ?? ''}`)
-                      .concat([`USER: ${prompt}`, 'ASSISTANT:'])
-                      .join('\n')
-                  : [`USER: ${prompt}`, 'ASSISTANT:'].join('\n')
+                  : []
+                return [...parts, `USER: ${prompt}`, 'ASSISTANT:'].join('\n')
               }
               // direct
               const history = messages
@@ -66,7 +65,7 @@ const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${model
             })()
 
             const pipe = await getPipe()
-            const out = await pipe(chatPrompt, { max_new_tokens: max_tokens, temperature })
+            const out = await pipe(chatPrompt, { max_new_tokens: maxTokens, temperature })
             const text = Array.isArray(out) ? (out[0]?.generated_text ?? '') : String(out)
 
             const result = {
@@ -74,7 +73,7 @@ const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${model
               correlationId: msg?.correlationId,
               model: modelId,
               output: text,
-              max_tokens
+              max_tokens: maxTokens
             }
             conn.write(Buffer.from(JSON.stringify(result) + '\n'))
           }
