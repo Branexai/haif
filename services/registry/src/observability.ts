@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { Resource } from '@opentelemetry/resources'
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
@@ -41,7 +41,7 @@ export function setupHttpMetrics(app: FastifyInstance) {
   const requestErrorsTotal = meter.createCounter('http_request_errors_total', { description: 'Total HTTP request errors' })
   const requestDuration = meter.createHistogram('http_request_duration_seconds', { description: 'Duration of HTTP requests', unit: 's' })
 
-  app.addHook('onRequest', (req, _reply, done) => {
+  app.addHook('onRequest', (req: FastifyRequest, _reply: FastifyReply, done: HookHandlerDoneFunction) => {
     ;(req as any).__start = process.hrtime.bigint()
     requestsTotal.add(1, { method: req.method, route: (req as any).routerPath ?? req.url, service: serviceName })
     const span = trace.getSpan(context.active())
@@ -52,7 +52,7 @@ export function setupHttpMetrics(app: FastifyInstance) {
     done()
   })
 
-  app.addHook('onResponse', (req, reply, done) => {
+  app.addHook('onResponse', (req: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
     const start = (req as any).__start as bigint | undefined
     if (start) {
       const durationNs = Number(process.hrtime.bigint() - start)
