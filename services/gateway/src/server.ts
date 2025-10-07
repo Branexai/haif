@@ -2,15 +2,25 @@ import RPC from '@hyperswarm/rpc'
 import Bottleneck from 'bottleneck'
 import pRetry from 'p-retry'
 import CircuitBreaker from 'opossum'
+import fs from 'fs'
 
 const rpc = new (RPC as any)()
 const server = rpc.createServer()
 await server.listen()
 
-const orchestratorPkHex = process.env.ORCHESTRATOR_PUBLIC_KEY || process.env.ORCH_PK || ''
+function readPkFromFile(): string | undefined {
+  const pkFile = process.env.ORCHESTRATOR_PK_FILE || '/shared/orchestrator_pk.txt'
+  try {
+    const s = fs.readFileSync(pkFile, 'utf8').trim()
+    if (s && /^[0-9a-fA-F]+$/.test(s)) return s
+  } catch {}
+  return undefined
+}
+
+const orchestratorPkHex = process.env.ORCHESTRATOR_PUBLIC_KEY || process.env.ORCH_PK || readPkFromFile() || ''
 if (!orchestratorPkHex) {
   // eslint-disable-next-line no-console
-  console.warn('Gateway: ORCHESTRATOR_PUBLIC_KEY not set. RPC proxy will not work.')
+  console.warn('Gateway: ORCHESTRATOR_PUBLIC_KEY not set and pk file missing. RPC proxy will not work.')
 }
 
 const TENANT_RATE_LIMIT_RPS = Number(process.env.TENANT_RATE_LIMIT_RPS || 5)

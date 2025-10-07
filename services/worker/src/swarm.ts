@@ -9,8 +9,8 @@ function topicHash(name: string): Buffer {
 type GetPipe = () => Promise<any>
 
 export async function startSwarm(getPipe: GetPipe, modelId: string, port: number) {
-  const presenceTopicName = process.env.HYPERSWARM_PRESENCE_TOPIC || 'tether-presence'
-  const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `tether-model-${modelId}`
+const presenceTopicName = process.env.HYPERSWARM_PRESENCE_TOPIC || 'haif-presence'
+const modelTopicName = process.env.HYPERSWARM_MODEL_TOPIC || `haif-model-${modelId}`
 
   const swarm = new Hyperswarm()
 

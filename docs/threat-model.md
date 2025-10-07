@@ -1,6 +1,6 @@
 # Security Threat Model (STRIDE)
 
-This threat model identifies potential security threats against the Tether inference network and outlines mitigations following the STRIDE methodology.
+This threat model identifies potential security threats against the HAIF inference network and outlines mitigations following the STRIDE methodology.
 
 ## Spoofing
 

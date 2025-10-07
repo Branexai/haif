@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'tether-dashboards'
+  - name: 'haif-dashboards'
     orgId: 1
-    folder: 'Tether'
+    folder: 'HAIF'
     type: file
     disableDeletion: false
     allowUiUpdates: true

@@ -1,12 +1,12 @@
 {
-  "name": "@tether/gateway",
+  "name": "@haif/gateway",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint ."
+    "lint": "eslint --ext .ts src"
   },
   "dependencies": {
     "@hyperswarm/rpc": "^3.0.0",

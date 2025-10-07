@@ -1,7 +1,7 @@
 {
   "id": null,
   "title": "Worker Inference",
-  "tags": ["tether"],
+  "tags": ["haif"],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 1,

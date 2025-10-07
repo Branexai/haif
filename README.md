@@ -1,4 +1,6 @@
-# Hyperswarm RPC AI Inference Framework ("Tether")
+# Hyperswarm-RPC AI Inference Framework ("HAIF")
+
+![HAIF Logo](./haif-logo.png)
 
 Production-ready microservices framework for AI inference over RPC. It provides a Gateway for client requests, an Orchestrator that schedules work, a Registry for model metadata, Workers that run inference, and a full observability stack (Prometheus, Grafana, Loki, Jaeger) — all wired together with Docker Compose.
 
@@ -67,8 +69,8 @@ Stop and clean:
 The stack is configured via environment variables in `docker-compose.yml`. You can set overrides with a `.env` file in the repo root or by exporting variables before running Compose.
 
 Key variables:
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: database credentials (defaults: `tether`, `tetherpass`, `tether`).
-- `MODEL_ID`: default model for Worker (default: `Xenova/tinyllama-1.1b-chat`).
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: database credentials (defaults: `haif`, `haifpass`, `haif`).
+- `MODEL_ID`: default model for Worker (default: `Xenova/TinyLlama-1.1B-Chat-v1.0`).
 - `OTEL_PROMETHEUS_PORT`, `OTEL_PROMETHEUS_ENDPOINT`: metrics export port and path (defaults: `9464`, `/metrics`).
 - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`: OTLP traces endpoint (Orchestrator uses `http://otel-collector:4318/v1/traces`).
 - `GATEWAY_URL` (Web Chat): internal URL for the Gateway when running inside Compose (`http://gateway:3000`). If running Web Chat locally, use `http://localhost:3000`.
@@ -96,7 +98,7 @@ The observability stack is provisioned for immediate use:
 - Dashboards (Grafana):
   - URL: `http://localhost:3001` (default credentials: `admin`/`admin`).
   - Pre-provisioned datasources: Prometheus, Loki, Jaeger.
-  - Prebuilt dashboards under folder `Tether`:
+- Prebuilt dashboards under folder `HAIF`:
     - Service Overview: throughput, error rate, latency (P95).
     - Worker Inference: request rate, failures, inference duration (P95).
 

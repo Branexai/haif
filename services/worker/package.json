@@ -1,18 +1,20 @@
 {
-  "name": "@tether/worker",
+  "name": "@haif/worker",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint . || true"
+    "lint": "eslint --ext .ts src || true"
   },
   "dependencies": {
     "fastify": "^4.25.0",
     "@huggingface/transformers": "^3.0.0",
     "hyperswarm": "^4.0.2",
     "@hyperswarm/rpc": "^3.0.0",
+    "node-fetch": "^3.3.2",
+    "p-retry": "^5.1.2",
     "@opentelemetry/api": "^1.8.0",
     "@opentelemetry/sdk-node": "^0.50.0",
     "@opentelemetry/auto-instrumentations-node": "^0.50.0",

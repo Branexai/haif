@@ -1,10 +1,10 @@
 # Architecture at a Glance
 
-This overview summarizes the Tether AI inference network and ties together the C4 Context, Container, Component, and Code (Deployment & Sequence) views in the `docs/` folder.
+This overview summarizes the HAIF AI inference network and ties together the C4 Context, Container, Component, and Code (Deployment & Sequence) views in the `docs/` folder.
 
 ## Technology Stack
 
-**Tether** is built using a modern, polyglot architecture optimized for AI inference workloads:
+**HAIF** is built using a modern, polyglot architecture optimized for AI inference workloads:
 
 ### Core Technologies (current)
 - **Node.js/TypeScript**: Primary runtime for Gateway, Orchestrator, Registry, Worker
@@ -24,7 +24,7 @@ This overview summarizes the Tether AI inference network and ties together the C
 
 ## Overview
 
-Tether currently uses **Hyperswarm RPC** between services (Gateway, Orchestrator, Worker), with **OpenTelemetry** for observability. It includes an HTTP Bridge, RPC Gateway, Orchestrator/Scheduler, Model Registry, Metadata Store, and regional Worker endpoints.
+HAIF currently uses **Hyperswarm RPC** between services (Gateway, Orchestrator, Worker), with **OpenTelemetry** for observability. It includes an HTTP Bridge, RPC Gateway, Orchestrator/Scheduler, Model Registry, Metadata Store, and regional Worker endpoints.
 
 - Clients submit inference requests to the Gateway.
 - The Gateway routes to the Orchestrator over RPC.

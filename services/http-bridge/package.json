@@ -1,5 +1,5 @@
 {
-  "name": "@tether/http-bridge",
+  "name": "@haif/http-bridge",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "opossum": "^6.3.0",
     "p-retry": "^5.1.2",
     "bottleneck": "^2.19.5",
-    "@fastify/cors": "^8.3.0"
+    "@fastify/cors": "^8.3.0",
+    "prom-client": "^14.2.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

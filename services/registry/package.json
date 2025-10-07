@@ -1,12 +1,12 @@
 {
-  "name": "@tether/registry",
+  "name": "@haif/registry",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint ."
+    "lint": "eslint --ext .ts src"
   },
   "dependencies": {
     "@hyperswarm/rpc": "^3.0.0",

@@ -1,4 +1,4 @@
-# Tether – C4 Model — Components
+# HAIF – C4 Model — Components
 
 Related layers: [Context](./c4-context.md) • [Containers](./c4-containers.md) • [Code](./c4-code.md)
 
@@ -78,7 +78,7 @@ SHOW_LEGEND()
 
 **Notes**
 
-* `DiscoverySub` subscribes to `tether/presence/<region>` and `tether/models/<model>/<version>/<region>`.
+* `DiscoverySub` subscribes to `haif/presence/<region>` and `haif/models/<model>/<version>/<region>`.
 * `Scheduler` ranks candidates using: region proximity, gpuClass, warmCache, queueDepth, breaker state, tenant policy.
 * `Reservation Manager` ensures idempotency via `(correlationId, retryToken)` and persists state before dispatch.
 

@@ -1,0 +1,6 @@
+# Ignore build outputs and dependencies for ESLint
+**/dist/
+**/node_modules/
+
+# Optional: ignore generated type definitions
+**/*.d.ts

@@ -1,5 +1,5 @@
 {
-  "name": "@tether/example-cli",
+  "name": "@haif/example-cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",

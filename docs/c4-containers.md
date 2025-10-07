@@ -1,11 +1,11 @@
-# Tether – C4 Model — Containers
+# HAIF – C4 Model — Containers
 
 Related layers: [Context](./c4-context.md) • [Components](./c4-components.md) • [Code](./c4-code.md)
 
 ## 2) C4 – Container Diagram
 
 ```plantuml
-@startuml Container-Tether
+@startuml Container-HAIF
 !includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
 LAYOUT_WITH_LEGEND()
@@ -14,9 +14,9 @@ skinparam shadowing false
 skinparam roundcorner 12
 
 Person(client, "API Client / SDK")
-Person(devops, "Tether Operator")
+Person(devops, "HAIF Operator")
 
-System_Boundary(tether, "Tether – AI Inference Network") {
+System_Boundary(haif, "HAIF – AI Inference Network") {
   Container(gateway, "RPC Gateway", "Node.js/TypeScript", "Edge adapter: validates, normalizes, rate-limits, emits trace context; Hyperswarm RPC")
   Container(orch, "Orchestrator/Scheduler", "Node.js/TypeScript", "Discovers workers, matches requests, retries, circuit-breakers")
   Container(reg, "Model Registry", "Node.js/TypeScript", "Catalog of models, versions, capabilities, policies")
@@ -85,9 +85,9 @@ SHOW_LEGEND()
 
 * (Planned) Hyperswarm Topics
 
-  * Presence: `tether/presence/<region>`
-  * Models: `tether/models/<model>/<version>/<region>`
-  * Control: `tether/control/<region>`
+* Presence: `haif/presence/<region>`
+* Models: `haif/models/<model>/<version>/<region>`
+* Control: `haif/control/<region>`
 * **RPC Contracts** (high level)
 
   * `Infer.Request { tenantId, modelId, version, input, correlationId, retryToken, traceId }`

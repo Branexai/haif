@@ -1,0 +1,24 @@
+{
+  "title": "RPC vs HTTP Paths",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Orchestrator schedule path",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (path) (rate(orchestrator_schedule_path_total[5m]))", "legendFormat": "{{path}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Bridge→Orchestrator path",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (path) (rate(http_bridge_orchestrator_path_total[5m]))", "legendFormat": "{{path}}" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

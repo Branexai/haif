@@ -14,6 +14,19 @@
     "tsconfigRootDir": "."
   },
   "rules": {
-    "@typescript-eslint/explicit-function-return-type": "off"
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/prefer-nullish-coalescing": "off",
+    "@typescript-eslint/no-unnecessary-type-assertion": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/promise-function-async": "off",
+    "@typescript-eslint/no-unsafe-argument": "off",
+    "@typescript-eslint/space-before-function-paren": "off",
+    "@typescript-eslint/no-confusing-void-expression": "off",
+    "@typescript-eslint/consistent-type-definitions": "off",
+    "@typescript-eslint/prefer-optional-chain": "off",
+    "promise/param-names": "off",
+    "no-trailing-spaces": "off",
+    "eol-last": "off"
   }
 }

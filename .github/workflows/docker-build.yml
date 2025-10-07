@@ -18,25 +18,25 @@ jobs:
           context: .
           file: CI/dockerfiles/Dockerfile.gateway
           push: false
-          tags: tether/gateway:pilot
+      tags: haif/gateway:pilot
       - name: Build orchestrator image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: CI/dockerfiles/Dockerfile.orchestrator
           push: false
-          tags: tether/orchestrator:pilot
+      tags: haif/orchestrator:pilot
       - name: Build registry image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: CI/dockerfiles/Dockerfile.registry
           push: false
-          tags: tether/registry:pilot
+      tags: haif/registry:pilot
       - name: Build worker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: CI/dockerfiles/Dockerfile.worker
           push: false
-          tags: tether/worker:pilot
+      tags: haif/worker:pilot

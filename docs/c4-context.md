@@ -1,11 +1,11 @@
-# Tether – C4 Model — Context
+# HAIF – C4 Model — Context
 
 Related layers: [Containers](./c4-containers.md) • [Components](./c4-components.md) • [Code](./c4-code.md)
 
 ## 1) C4 – Context Diagram
 
 ```plantuml
-@startuml Context-Tether
+@startuml Context-HAIF
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
 
 LAYOUT_WITH_LEGEND()
@@ -18,11 +18,11 @@ skinparam rectangle {
 
 ' People
 Person(client, "API Client / SDK", "Product teams integrating inference APIs")
-Person(devops, "Tether Operator", "Runs/observes the platform; manages rollouts and quotas")
+Person(devops, "HAIF Operator", "Runs/observes the platform; manages rollouts and quotas")
 
 ' System under design
-System_Boundary(tether, "Tether – AI Inference Network") {
-  System(tethplat, "Tether Platform", "P2P orchestration + model execution at the edge/workers")
+System_Boundary(haif, "HAIF – AI Inference Network") {
+System(haifplat, "HAIF Platform", "P2P orchestration + model execution at the edge/workers")
 }
 
 ' External systems

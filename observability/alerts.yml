@@ -1,5 +1,5 @@
 groups:
-  - name: tether-alerts
+  - name: haif-alerts
     rules:
       - alert: HighErrorRate
         expr: (sum(rate(http_request_errors_total[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service)) > 0.1

@@ -1,11 +1,11 @@
-# Tether – C4 Model — Code
+# HAIF – C4 Model — Code
 
 Related layers: [Context](./c4-context.md) • [Containers](./c4-containers.md) • [Components](./c4-components.md)
 
 ## 8) Lightweight Deployment View
 
 ```plantuml
-@startuml Deployment-Tether
+@startuml Deployment-HAIF
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
 
 Deployment_Node(cloud, "Cloud Regions") {
@@ -138,7 +138,7 @@ Gateway -> Client: final response (done)
 
 ```plantuml
 @startmindmap
-* Tether Code Implementation
+* HAIF Code Implementation
 ** Orchestrator (Node.js/TypeScript)
 *** Core Modules
 **** src/orchestrator/
@@ -285,7 +285,7 @@ Render the mindmap with PlantUML to visualize the code-level structure and relat
 #### Orchestrator package.json
 ```json
 {
-  "name": "@tether/orchestrator",
+  "name": "@haif/orchestrator",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -352,7 +352,7 @@ mypy>=1.5.0
 #### Gateway package.json
 ```json
 {
-  "name": "@tether/gateway",
+  "name": "@haif/gateway",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
