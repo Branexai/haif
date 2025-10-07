@@ -125,7 +125,7 @@ const schedulePathCounter = new client.Counter({
 registry.registerMetric(schedulePathCounter)
 app.get('/metrics', async (req, reply) => {
   reply.header('Content-Type', registry.contentType)
-  return registry.metrics()
+  return await registry.metrics()
 })
 
 app.post('/register-worker', async (req, reply) => {
